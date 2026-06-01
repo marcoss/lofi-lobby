@@ -65,6 +65,12 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 		"#5f4530",
 		scene,
 	);
+	const runnerMaterial = createMaterial(
+		"muted-gallery-runner-material",
+		"#4d342d",
+		"#251917",
+		scene,
+	);
 
 	const floor = MeshBuilder.CreateGround(
 		"floor",
@@ -76,6 +82,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 	floor.receiveShadows = true;
 
 	createFloorSeams(scene, seamMaterial);
+	createFloorRunner(scene, runnerMaterial);
 	createBaseboards(scene, baseboardMaterial);
 
 	const ceiling = MeshBuilder.CreateBox(
@@ -161,6 +168,35 @@ function createWall(
 	wall.checkCollisions = false;
 	wall.receiveShadows = true;
 	return wall;
+}
+
+function createFloorRunner(scene: Scene, material: StandardMaterial): void {
+	const runnerY = 0.03;
+	const runnerDepth = ROOM_DEPTH - 3.2;
+	const runner = MeshBuilder.CreateBox(
+		"muted-gallery-runner",
+		{ width: 2.25, height: 0.018, depth: runnerDepth },
+		scene,
+	);
+	runner.position = new Vector3(0, runnerY, 0);
+	runner.material = material;
+	runner.receiveShadows = true;
+
+	const hemMaterial = createMaterial(
+		"muted-gallery-runner-hem-material",
+		"#34231f",
+		"#1b1110",
+		scene,
+	);
+	for (const x of [-1.05, 1.05]) {
+		const hem = MeshBuilder.CreateBox(
+			`runner-hem-${x}`,
+			{ width: 0.08, height: 0.008, depth: runnerDepth - 0.28 },
+			scene,
+		);
+		hem.position = new Vector3(x, runnerY + 0.014, 0);
+		hem.material = hemMaterial;
+	}
 }
 
 function createBaseboards(scene: Scene, material: StandardMaterial): void {

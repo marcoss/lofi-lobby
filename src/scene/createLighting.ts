@@ -15,10 +15,14 @@ import { ROOM_DEPTH, ROOM_WIDTH } from "./createGalleryRoom";
 
 const EXHIBIT_LIGHT_RIG = {
 	lightHeight: 6.55,
-	spotAngle: Math.PI / 4.6,
-	spotExponent: 2.4,
-	spotIntensity: 3.05,
-	spotRange: 9.0,
+	spotAngle: Math.PI / 3.9,
+	spotExponent: 1.45,
+	spotIntensity: 2.65,
+	spotRange: 11.0,
+	spillAngle: Math.PI / 2.55,
+	spillExponent: 0.85,
+	spillIntensity: 0.42,
+	spillRange: 12.5,
 	floorGlowHeight: 0.55,
 	floorGlowIntensity: 0.84,
 	floorGlowRange: 3.4,
@@ -39,11 +43,14 @@ export function createLighting(scene: Scene, shadowCasters: Mesh[]): void {
 	ambient.diffuse = Color3.FromHexString("#b9c0c8");
 	ambient.groundColor = Color3.FromHexString("#5f656c");
 
+	createCeilingTracks(scene);
+
 	for (const exhibit of EXHIBITS) {
 		createExhibitLightRig(exhibit, scene, shadowCasters);
 	}
 
 	createCornerFillLights(scene);
+	createWarmWallBounceLights(scene);
 }
 
 function createExhibitLightRig(
@@ -62,6 +69,11 @@ function createExhibitLightRig(
 		`exhibit-downlight-${exhibit.id}`,
 		ceilingPosition,
 		shadowCasters,
+		scene,
+	);
+	createSoftSpillDownlight(
+		`exhibit-spill-${exhibit.id}`,
+		ceilingPosition,
 		scene,
 	);
 	createFloorGlow(`floor-glow-${exhibit.id}`, exhibit.position, scene);
@@ -99,6 +111,25 @@ function createPrimaryDownlight(
 	}
 }
 
+function createSoftSpillDownlight(
+	name: string,
+	position: Vector3,
+	scene: Scene,
+): void {
+	const light = new SpotLight(
+		name,
+		position,
+		new Vector3(0, -1, 0),
+		EXHIBIT_LIGHT_RIG.spillAngle,
+		EXHIBIT_LIGHT_RIG.spillExponent,
+		scene,
+	);
+	light.diffuse = Color3.FromHexString("#ece7dc");
+	light.specular = Color3.Black();
+	light.intensity = EXHIBIT_LIGHT_RIG.spillIntensity;
+	light.range = EXHIBIT_LIGHT_RIG.spillRange;
+}
+
 function createFloorGlow(name: string, position: Vector3, scene: Scene): void {
 	const light = new PointLight(
 		`${name}-light`,
@@ -129,6 +160,28 @@ function createFloorGlow(name: string, position: Vector3, scene: Scene): void {
 	glow.material = glowMaterial;
 }
 
+function createCeilingTracks(scene: Scene): void {
+	const material = new StandardMaterial("ceiling-track-material", scene);
+	material.diffuseColor = Color3.FromHexString("#08090a");
+	material.specularColor = Color3.FromHexString("#3a3d42");
+
+	const tracks = [
+		["north-track", new Vector3(0, 6.82, -5.65)],
+		["center-track", new Vector3(0, 6.82, 0)],
+		["south-track", new Vector3(0, 6.82, 5.65)],
+	] as const;
+
+	for (const [name, position] of tracks) {
+		const track = MeshBuilder.CreateBox(
+			name,
+			{ width: ROOM_WIDTH - 3, height: 0.08, depth: 0.12 },
+			scene,
+		);
+		track.position = position;
+		track.material = material;
+	}
+}
+
 function createCornerFillLights(scene: Scene): void {
 	const cornerInset = 2.5;
 	const y = 2.2;
@@ -152,6 +205,27 @@ function createCornerFillLights(scene: Scene): void {
 	}
 }
 
+function createWarmWallBounceLights(scene: Scene): void {
+	const lights = [
+		new Vector3(-ROOM_WIDTH / 2 + 1.8, 1.4, 0),
+		new Vector3(ROOM_WIDTH / 2 - 1.8, 1.4, 0),
+		new Vector3(0, 1.4, -ROOM_DEPTH / 2 + 1.8),
+		new Vector3(0, 1.4, ROOM_DEPTH / 2 - 1.8),
+	];
+
+	for (const [index, position] of lights.entries()) {
+		const light = new PointLight(
+			`warm-wall-bounce-${index + 1}`,
+			position,
+			scene,
+		);
+		light.diffuse = Color3.FromHexString("#c8945f");
+		light.specular = Color3.Black();
+		light.intensity = 0.18;
+		light.range = 7.5;
+	}
+}
+
 function createLightFixture(
 	name: string,
 	position: Vector3,
@@ -167,6 +241,14 @@ function createLightFixture(
 	const glowMaterial = new StandardMaterial(`${name}-glow-material`, scene);
 	glowMaterial.diffuseColor = Color3.FromHexString("#f5f6f2");
 	glowMaterial.emissiveColor = Color3.FromHexString("#f5f6f2");
+
+	const cable = MeshBuilder.CreateCylinder(
+		`${name}-cable`,
+		{ diameter: 0.035, height: 0.36, tessellation: 12 },
+		scene,
+	);
+	cable.position = new Vector3(position.x, position.y + 0.23, position.z);
+	cable.material = fixtureMaterial;
 
 	const fixture = MeshBuilder.CreateCylinder(
 		name,

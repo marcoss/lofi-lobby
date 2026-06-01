@@ -12,15 +12,12 @@ export type PedestalSetup = {
 };
 
 export function createPedestals(scene: Scene): PedestalSetup {
-	const pedestalMaterial = new StandardMaterial("pedestal-material", scene);
-	pedestalMaterial.maxSimultaneousLights = 16;
-	pedestalMaterial.diffuseColor = Color3.FromHexString("#f4f1ea");
-	pedestalMaterial.specularColor = Color3.FromHexString("#8c887f");
-
+	const contactShadowMaterial = createContactShadowMaterial(scene);
 	const collisionMeshes: Mesh[] = [];
 	const shadowCasters: Mesh[] = [];
 
-	for (const exhibit of EXHIBITS) {
+	for (const [index, exhibit] of EXHIBITS.entries()) {
+		const pedestalMaterial = createPedestalMaterial(index, scene);
 		const pedestal = MeshBuilder.CreateCylinder(
 			`${exhibit.id}-pedestal`,
 			{ diameter: 0.82, height: 0.9, tessellation: 32 },
@@ -34,6 +31,12 @@ export function createPedestals(scene: Scene): PedestalSetup {
 		pedestal.material = pedestalMaterial;
 		pedestal.checkCollisions = true;
 		pedestal.receiveShadows = true;
+		createContactShadow(
+			exhibit.id,
+			exhibit.position,
+			contactShadowMaterial,
+			scene,
+		);
 		collisionMeshes.push(pedestal);
 		shadowCasters.push(pedestal);
 
@@ -43,6 +46,43 @@ export function createPedestals(scene: Scene): PedestalSetup {
 	}
 
 	return { collisionMeshes, shadowCasters };
+}
+
+function createPedestalMaterial(index: number, scene: Scene): StandardMaterial {
+	const palette = ["#f4f1ea", "#eee9df", "#f7f2e7", "#ebe6dc", "#f1ede4"];
+	const material = new StandardMaterial(
+		`pedestal-material-${index + 1}`,
+		scene,
+	);
+	material.maxSimultaneousLights = 16;
+	material.diffuseColor = Color3.FromHexString(palette[index % palette.length]);
+	material.specularColor = Color3.FromHexString("#8c887f");
+	return material;
+}
+
+function createContactShadowMaterial(scene: Scene): StandardMaterial {
+	const material = new StandardMaterial("soft-contact-shadow-material", scene);
+	material.diffuseColor = Color3.Black();
+	material.emissiveColor = Color3.Black();
+	material.specularColor = Color3.Black();
+	material.alpha = 0.26;
+	return material;
+}
+
+function createContactShadow(
+	id: string,
+	position: Vector3,
+	material: StandardMaterial,
+	scene: Scene,
+): void {
+	const shadow = MeshBuilder.CreateCylinder(
+		`${id}-soft-contact-shadow`,
+		{ diameter: 1.35, height: 0.006, tessellation: 48 },
+		scene,
+	);
+	shadow.position = new Vector3(position.x, 0.018, position.z);
+	shadow.scaling = new Vector3(1, 0.02, 0.72);
+	shadow.material = material;
 }
 
 function createFruit(id: string, color: string, scene: Scene): Mesh {
