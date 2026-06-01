@@ -4,6 +4,9 @@ import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import type { Scene } from "@babylonjs/core/scene";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { Texture } from "@babylonjs/core/Materials/Textures/texture";
+import brickWallTextureUrl from "../assets/brick_wall_006_diff_1k.webp";
+import floorTextureUrl from "../assets/laminate_floor_02_diff_1k.webp";
 
 export type GalleryRoom = {
 	floor: Mesh;
@@ -17,46 +20,12 @@ const WALL_HEIGHT = 7;
 const WALL_THICKNESS = 0.35;
 
 export function createGalleryRoom(scene: Scene): GalleryRoom {
-	const floorMaterial = createMaterial(
-		"polished-concrete-material",
-		"#7b7b76",
-		"#aaa9a3",
-		scene,
-	);
-	const northWallMaterial = createMaterial(
-		"north-charcoal-wall",
-		"#33383e",
-		"#272b30",
-		scene,
-	);
-	const southWallMaterial = createMaterial(
-		"south-slate-wall",
-		"#303b45",
-		"#272f36",
-		scene,
-	);
-	const eastWallMaterial = createMaterial(
-		"east-graphite-wall",
-		"#3d4041",
-		"#2c2f30",
-		scene,
-	);
-	const westWallMaterial = createMaterial(
-		"west-blueblack-wall",
-		"#29353f",
-		"#222b33",
-		scene,
-	);
+	const floorMaterial = createFloorMaterial(scene);
+	const wallMaterial = createBrickWallMaterial(scene);
 	const ceilingMaterial = createMaterial(
 		"black-ceiling-material",
 		"#050506",
 		"#202024",
-		scene,
-	);
-	const seamMaterial = createMaterial(
-		"concrete-seam-material",
-		"#4f4f4b",
-		"#202020",
 		scene,
 	);
 	const baseboardMaterial = createMaterial(
@@ -99,7 +68,6 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 	floor.checkCollisions = false;
 	floor.receiveShadows = true;
 
-	createFloorSeams(scene, seamMaterial);
 	createFloorRunner(scene, runnerMaterial);
 	createBaseboards(scene, baseboardMaterial);
 	createMuseumBench(scene, benchMaterial, benchLegMaterial);
@@ -121,7 +89,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 			ROOM_WIDTH,
 			WALL_HEIGHT,
 			WALL_THICKNESS,
-			northWallMaterial,
+			wallMaterial,
 			scene,
 		),
 		createWall(
@@ -130,7 +98,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 			ROOM_WIDTH,
 			WALL_HEIGHT,
 			WALL_THICKNESS,
-			southWallMaterial,
+			wallMaterial,
 			scene,
 		),
 		createWall(
@@ -139,7 +107,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 			WALL_THICKNESS,
 			WALL_HEIGHT,
 			ROOM_DEPTH + WALL_THICKNESS * 2,
-			eastWallMaterial,
+			wallMaterial,
 			scene,
 		),
 		createWall(
@@ -148,7 +116,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 			WALL_THICKNESS,
 			WALL_HEIGHT,
 			ROOM_DEPTH + WALL_THICKNESS * 2,
-			westWallMaterial,
+			wallMaterial,
 			scene,
 		),
 	];
@@ -170,6 +138,36 @@ function createMaterial(
 	material.maxSimultaneousLights = 16;
 	material.diffuseColor = Color3.FromHexString(diffuse);
 	material.specularColor = Color3.FromHexString(specular);
+	return material;
+}
+
+function createFloorMaterial(scene: Scene): StandardMaterial {
+	const material = createMaterial(
+		"laminate-floor-material",
+		"#ffffff",
+		"#6c5540",
+		scene,
+	);
+	const texture = new Texture(floorTextureUrl, scene);
+	texture.uScale = ROOM_WIDTH / 2.4;
+	texture.vScale = ROOM_DEPTH / 2.4;
+	material.diffuseTexture = texture;
+	material.specularPower = 48;
+	return material;
+}
+
+function createBrickWallMaterial(scene: Scene): StandardMaterial {
+	const material = createMaterial(
+		"brick-wall-material",
+		"#ffffff",
+		"#332822",
+		scene,
+	);
+	const texture = new Texture(brickWallTextureUrl, scene);
+	texture.uScale = 8;
+	texture.vScale = 2.5;
+	material.diffuseTexture = texture;
+	material.specularPower = 18;
 	return material;
 }
 
@@ -303,27 +301,5 @@ function createBaseboards(scene: Scene, material: StandardMaterial): void {
 		board.position = position;
 		board.material = material;
 		board.receiveShadows = true;
-	}
-}
-
-function createFloorSeams(scene: Scene, material: StandardMaterial): void {
-	for (let x = -ROOM_WIDTH / 2 + 2; x < ROOM_WIDTH / 2; x += 2) {
-		const seam = MeshBuilder.CreateBox(
-			`floor-seam-${x.toFixed(1)}`,
-			{ width: 0.018, height: 0.006, depth: ROOM_DEPTH },
-			scene,
-		);
-		seam.position = new Vector3(x, 0.004, 0);
-		seam.material = material;
-	}
-
-	for (let z = -ROOM_DEPTH / 2 + 2; z < ROOM_DEPTH / 2; z += 2) {
-		const seam = MeshBuilder.CreateBox(
-			`floor-cross-seam-${z.toFixed(1)}`,
-			{ width: ROOM_WIDTH, height: 0.005, depth: 0.014 },
-			scene,
-		);
-		seam.position = new Vector3(0, 0.005, z);
-		seam.material = material;
 	}
 }

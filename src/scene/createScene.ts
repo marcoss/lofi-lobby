@@ -35,6 +35,7 @@ export function createScene(
 
 	scene.onBeforeRenderObservable.add(() => {
 		const activeExhibit = exhibitSystem.update(player.position);
+		pedestals.updateFloating(activeExhibit?.id ?? null);
 		if (activeExhibit) {
 			exhibitPanel.show(activeExhibit);
 		} else {

@@ -6,15 +6,29 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import type { Scene } from "@babylonjs/core/scene";
 import { EXHIBITS } from "../exhibits/exhibitData";
 
+const FRUIT_FLOAT_HEIGHT = 1.24;
+const FRUIT_BOB_AMPLITUDE = 0.045;
+const FRUIT_BOB_SPEED = 1.35;
+const FRUIT_ROTATION_SPEED = 0.16;
+
+type FloatingFruit = {
+	baseY: number;
+	mesh: Mesh;
+	phase: number;
+	rotationY: number;
+};
+
 export type PedestalSetup = {
 	collisionMeshes: Mesh[];
 	shadowCasters: Mesh[];
+	updateFloating: (activeExhibitId: string | null) => void;
 };
 
 export function createPedestals(scene: Scene): PedestalSetup {
 	const contactShadowMaterial = createContactShadowMaterial(scene);
 	const collisionMeshes: Mesh[] = [];
 	const shadowCasters: Mesh[] = [];
+	const floatingFruits: FloatingFruit[] = [];
 
 	for (const [index, exhibit] of EXHIBITS.entries()) {
 		const pedestalMaterial = createPedestalMaterial(index, scene);
@@ -41,11 +55,27 @@ export function createPedestals(scene: Scene): PedestalSetup {
 		shadowCasters.push(pedestal);
 
 		const fruit = createFruit(exhibit.id, exhibit.color, scene);
-		fruit.position = new Vector3(exhibit.position.x, 1.24, exhibit.position.z);
+		fruit.position = new Vector3(
+			exhibit.position.x,
+			FRUIT_FLOAT_HEIGHT,
+			exhibit.position.z,
+		);
+		floatingFruits.push({
+			baseY: FRUIT_FLOAT_HEIGHT,
+			mesh: fruit,
+			phase: index * 1.37,
+			rotationY: fruit.rotation.y,
+		});
 		shadowCasters.push(fruit);
 	}
 
-	return { collisionMeshes, shadowCasters };
+	return {
+		collisionMeshes,
+		shadowCasters,
+		updateFloating: (activeExhibitId) => {
+			updateFloatingFruits(floatingFruits, activeExhibitId);
+		},
+	};
 }
 
 function createPedestalMaterial(index: number, scene: Scene): StandardMaterial {
@@ -83,6 +113,26 @@ function createContactShadow(
 	shadow.position = new Vector3(position.x, 0.018, position.z);
 	shadow.scaling = new Vector3(1, 0.02, 0.72);
 	shadow.material = material;
+}
+
+function updateFloatingFruits(
+	fruits: FloatingFruit[],
+	activeExhibitId: string | null,
+): void {
+	const time = performance.now() / 1000;
+
+	for (const fruit of fruits) {
+		if (fruit.mesh.name !== `${activeExhibitId}-fruit`) {
+			fruit.mesh.position.y = fruit.baseY;
+			fruit.mesh.rotation.y = fruit.rotationY;
+			continue;
+		}
+
+		fruit.mesh.position.y =
+			fruit.baseY +
+			Math.sin(time * FRUIT_BOB_SPEED + fruit.phase) * FRUIT_BOB_AMPLITUDE;
+		fruit.mesh.rotation.y = fruit.rotationY + time * FRUIT_ROTATION_SPEED;
+	}
 }
 
 function createFruit(id: string, color: string, scene: Scene): Mesh {
