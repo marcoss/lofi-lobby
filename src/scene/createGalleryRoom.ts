@@ -59,6 +59,12 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 		"#202020",
 		scene,
 	);
+	const baseboardMaterial = createMaterial(
+		"warm-wood-baseboard-material",
+		"#2d2118",
+		"#5f4530",
+		scene,
+	);
 
 	const floor = MeshBuilder.CreateGround(
 		"floor",
@@ -70,6 +76,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 	floor.receiveShadows = true;
 
 	createFloorSeams(scene, seamMaterial);
+	createBaseboards(scene, baseboardMaterial);
 
 	const ceiling = MeshBuilder.CreateBox(
 		"black-ceiling",
@@ -154,6 +161,42 @@ function createWall(
 	wall.checkCollisions = false;
 	wall.receiveShadows = true;
 	return wall;
+}
+
+function createBaseboards(scene: Scene, material: StandardMaterial): void {
+	const height = 0.18;
+	const thickness = 0.08;
+	const y = height / 2;
+	const inset = 0.04;
+	const boards = [
+		[
+			"north-baseboard",
+			new Vector3(0, y, ROOM_DEPTH / 2 - inset),
+			{ width: ROOM_WIDTH, height, depth: thickness },
+		],
+		[
+			"south-baseboard",
+			new Vector3(0, y, -ROOM_DEPTH / 2 + inset),
+			{ width: ROOM_WIDTH, height, depth: thickness },
+		],
+		[
+			"east-baseboard",
+			new Vector3(ROOM_WIDTH / 2 - inset, y, 0),
+			{ width: thickness, height, depth: ROOM_DEPTH },
+		],
+		[
+			"west-baseboard",
+			new Vector3(-ROOM_WIDTH / 2 + inset, y, 0),
+			{ width: thickness, height, depth: ROOM_DEPTH },
+		],
+	] as const;
+
+	for (const [name, position, size] of boards) {
+		const board = MeshBuilder.CreateBox(name, size, scene);
+		board.position = position;
+		board.material = material;
+		board.receiveShadows = true;
+	}
 }
 
 function createFloorSeams(scene: Scene, material: StandardMaterial): void {

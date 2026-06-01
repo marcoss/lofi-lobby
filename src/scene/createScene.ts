@@ -1,4 +1,4 @@
-import { Color4 } from "@babylonjs/core/Maths/math.color";
+import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 import { Scene } from "@babylonjs/core/scene";
 import type { Engine } from "@babylonjs/core/Engines/engine";
 import { ExhibitSystem } from "../exhibits/ExhibitSystem";
@@ -8,6 +8,7 @@ import { ExhibitPanel } from "../ui/ExhibitPanel";
 import { createGalleryRoom } from "./createGalleryRoom";
 import { createLighting } from "./createLighting";
 import { createPedestals } from "./createPedestals";
+import { createWallPlaques } from "./createWallPlaques";
 import { YouTubeFrame } from "./createYouTubeFrame";
 
 export function createScene(
@@ -18,10 +19,14 @@ export function createScene(
 	const scene = new Scene(engine);
 	scene.clearColor = new Color4(0.02, 0.022, 0.026, 1);
 	scene.collisionsEnabled = true;
+	scene.fogMode = Scene.FOGMODE_EXP2;
+	scene.fogDensity = 0.011;
+	scene.fogColor = Color3.FromHexString("#15181d");
 
 	const player = new PlayerController(scene, canvas, hudRoot);
 	const room = createGalleryRoom(scene);
 	const pedestals = createPedestals(scene);
+	createWallPlaques(scene);
 	new YouTubeFrame(scene, hudRoot);
 	createLighting(scene, [...room.collisionMeshes, ...pedestals.shadowCasters]);
 
