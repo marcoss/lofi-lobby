@@ -10,6 +10,17 @@ Prototype an indoor museum web app where desktop users walk around a single rect
 - Prove visual mood: wood plank flooring, darker areas, warm localized lighting, and shadows.
 - Prove gallery flow: simple exhibit layout with pedestals and proximity-based info panels.
 
+## Prototype Priorities
+
+Build in this order:
+
+1. Walking feel: first-person camera, WASD, mouse-look, and human-scale movement.
+2. Collision: walls and pedestals should feel solid without adding a physics engine.
+3. Exhibit loop: nearby pedestal shows one local info panel.
+4. Visual mood: wood floor, warm exhibit lights, dark corners, and limited shadows.
+
+Keep the POC lean. Prefer a few clear systems over a full engine-style folder tree. Bad movement will hurt the prototype more than unfinished art.
+
 ## Recommended Stack
 
 ```txt
@@ -40,8 +51,9 @@ Assets: GLB/glTF from Blender
 Use a hybrid approach:
 
 - Start with a code-generated rectangular room for speed.
-- Use GLB-ready asset loading from day one.
-- Use placeholder primitives or simple GLB models for fruits and pedestals.
+- Use primitives for the first feel pass: floor, walls, pedestals, and fruit placeholders.
+- Keep object creation interfaces GLB-compatible, but do not block the first prototype on asset loading.
+- Add GLB loading after movement, collision, and exhibit panels work.
 - Later, replace code-generated room or exhibit assets with Blender-authored GLB files.
 
 ## Initial Scene
@@ -60,9 +72,13 @@ Use a hybrid approach:
 - Desktop only for now.
 - First-person WASD movement.
 - Mouse-look camera.
-- Pointer lock likely required for natural first-person controls.
+- Pointer lock required for natural first-person controls.
+- Show a simple "Click to enter museum" state before pointer lock.
+- Escape should release pointer lock and pause movement input.
 - Basic collision against walls and pedestals.
-- Player height should feel human-scale.
+- Use Babylon camera collisions and an ellipsoid first; do not add a physics engine for the POC.
+- Babylon units should represent meters.
+- Recommended player scale: height `1.7`, eye height `1.6`, collision radius around `0.35`.
 
 ## Exhibit Interaction
 
@@ -91,6 +107,8 @@ Prototype should focus on moody lighting.
 - Use point lights or spot lights for exhibit emphasis.
 - Keep darker regions in room.
 - Use shadows where affordable.
+- Limit the first prototype to 1–2 shadow-casting lights.
+- Use non-shadow lights or emissive materials for extra warmth and mood.
 - For production, prefer mostly baked/static lighting and selective dynamic lights.
 - Avoid many real-time shadow-casting point lights; expensive in browser.
 
@@ -135,21 +153,16 @@ Architecture should keep future multiplayer easy by separating:
 ```txt
 src/
   main.ts
-  engine/
-    createEngine.ts
-    createScene.ts
   scene/
+    createScene.ts
     createGalleryRoom.ts
     createLighting.ts
     createPedestals.ts
-    loadAssets.ts
   player/
     PlayerController.ts
   exhibits/
     ExhibitSystem.ts
     exhibitData.ts
-  avatars/
-    GhostAvatarSystem.ts
   ui/
     ExhibitPanel.ts
 ```
@@ -179,9 +192,9 @@ Should remain local-only.
 
 #### GhostAvatarSystem
 
-Not required for first version, but useful future boundary.
+Do not build for the first prototype. Keep it as a future boundary only.
 
-Responsible for:
+Future responsibilities:
 
 - Rendering non-colliding capsule avatars.
 - Updating avatar transforms from mock or network state.
@@ -191,7 +204,9 @@ No collision with local player.
 
 #### Asset Loading
 
-Responsible for:
+Do not build a full asset-loading layer until the primitive prototype feels good.
+
+Future responsibilities:
 
 - Loading GLB/glTF objects.
 - Allowing fallback primitives while assets are missing.
@@ -199,16 +214,13 @@ Responsible for:
 
 ## First Milestone
 
-Build one room with:
+Build one room in five passes:
 
-- Rectangular gallery.
-- Wood floor.
-- Moody lights and dark areas.
-- First-person WASD + mouse-look.
-- Wall/pedestal collision.
-- 5–6 pedestals.
-- Placeholder fruit objects.
-- Proximity info panel.
+1. Rectangular gallery with first-person WASD + mouse-look.
+2. Wall and pedestal collision using Babylon camera collisions.
+3. 5–6 pedestals with placeholder fruit objects.
+4. Proximity info panel for nearest exhibit.
+5. Wood floor, moody lights, dark areas, and limited shadows.
 
 ## Non-Goals for First Prototype
 
