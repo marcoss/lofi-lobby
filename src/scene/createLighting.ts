@@ -28,16 +28,16 @@ const EXHIBIT_LIGHT_RIG = {
 };
 
 export function createLighting(scene: Scene, shadowCasters: Mesh[]): void {
-	scene.ambientColor = Color3.FromHexString("#24272c");
+	scene.ambientColor = Color3.FromHexString("#353a42");
 
 	const ambient = new HemisphericLight(
 		"low-gallery-ambient",
 		new Vector3(0, 1, 0),
 		scene,
 	);
-	ambient.intensity = 0.22;
-	ambient.diffuse = Color3.FromHexString("#a8afb6");
-	ambient.groundColor = Color3.FromHexString("#242628");
+	ambient.intensity = 0.38;
+	ambient.diffuse = Color3.FromHexString("#b9c0c8");
+	ambient.groundColor = Color3.FromHexString("#5f656c");
 
 	for (const exhibit of EXHIBITS) {
 		createExhibitLightRig(exhibit, scene, shadowCasters);
@@ -58,7 +58,12 @@ function createExhibitLightRig(
 	);
 
 	createLightFixture(`exhibit-fixture-${exhibit.id}`, ceilingPosition, scene);
-	createPrimaryDownlight(`exhibit-downlight-${exhibit.id}`, ceilingPosition, shadowCasters, scene);
+	createPrimaryDownlight(
+		`exhibit-downlight-${exhibit.id}`,
+		ceilingPosition,
+		shadowCasters,
+		scene,
+	);
 	createFloorGlow(`floor-glow-${exhibit.id}`, exhibit.position, scene);
 }
 
@@ -113,7 +118,11 @@ function createFloorGlow(name: string, position: Vector3, scene: Scene): void {
 
 	const glow = MeshBuilder.CreateCylinder(
 		name,
-		{ diameter: EXHIBIT_LIGHT_RIG.floorGlowDiameter, height: 0.01, tessellation: 48 },
+		{
+			diameter: EXHIBIT_LIGHT_RIG.floorGlowDiameter,
+			height: 0.01,
+			tessellation: 48,
+		},
 		scene,
 	);
 	glow.position = new Vector3(position.x, 0.012, position.z);
@@ -124,7 +133,11 @@ function createCornerFillLights(scene: Scene): void {
 	const cornerInset = 2.5;
 	const y = 2.2;
 	const positions = [
-		new Vector3(-ROOM_WIDTH / 2 + cornerInset, y, -ROOM_DEPTH / 2 + cornerInset),
+		new Vector3(
+			-ROOM_WIDTH / 2 + cornerInset,
+			y,
+			-ROOM_DEPTH / 2 + cornerInset,
+		),
 		new Vector3(ROOM_WIDTH / 2 - cornerInset, y, -ROOM_DEPTH / 2 + cornerInset),
 		new Vector3(-ROOM_WIDTH / 2 + cornerInset, y, ROOM_DEPTH / 2 - cornerInset),
 		new Vector3(ROOM_WIDTH / 2 - cornerInset, y, ROOM_DEPTH / 2 - cornerInset),
@@ -139,8 +152,15 @@ function createCornerFillLights(scene: Scene): void {
 	}
 }
 
-function createLightFixture(name: string, position: Vector3, scene: Scene): void {
-	const fixtureMaterial = new StandardMaterial(`${name}-fixture-material`, scene);
+function createLightFixture(
+	name: string,
+	position: Vector3,
+	scene: Scene,
+): void {
+	const fixtureMaterial = new StandardMaterial(
+		`${name}-fixture-material`,
+		scene,
+	);
 	fixtureMaterial.diffuseColor = Color3.FromHexString("#0a0b0d");
 	fixtureMaterial.specularColor = Color3.FromHexString("#4f545a");
 
@@ -150,7 +170,11 @@ function createLightFixture(name: string, position: Vector3, scene: Scene): void
 
 	const fixture = MeshBuilder.CreateCylinder(
 		name,
-		{ diameter: EXHIBIT_LIGHT_RIG.fixtureDiameter, height: 0.18, tessellation: 32 },
+		{
+			diameter: EXHIBIT_LIGHT_RIG.fixtureDiameter,
+			height: 0.18,
+			tessellation: 32,
+		},
 		scene,
 	);
 	fixture.position = position;

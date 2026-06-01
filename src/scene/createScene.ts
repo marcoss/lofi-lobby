@@ -22,7 +22,7 @@ export function createScene(
 	const player = new PlayerController(scene, canvas, hudRoot);
 	const room = createGalleryRoom(scene);
 	const pedestals = createPedestals(scene);
-	new YouTubeFrame(scene, hudRoot, player.position);
+	new YouTubeFrame(scene, hudRoot);
 	createLighting(scene, [...room.collisionMeshes, ...pedestals.shadowCasters]);
 
 	const exhibitSystem = new ExhibitSystem(EXHIBITS);
