@@ -41,7 +41,7 @@ export function createPedestals(scene: Scene): PedestalSetup {
 		shadowCasters.push(pedestal);
 
 		const fruit = createFruit(exhibit.id, exhibit.color, scene);
-		fruit.position = new Vector3(exhibit.position.x, 1.14, exhibit.position.z);
+		fruit.position = new Vector3(exhibit.position.x, 1.24, exhibit.position.z);
 		shadowCasters.push(fruit);
 	}
 

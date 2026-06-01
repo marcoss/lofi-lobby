@@ -4,9 +4,15 @@ import type { Scene } from "@babylonjs/core/scene";
 import { EXHIBITS } from "../exhibits/exhibitData";
 import { ROOM_DEPTH, ROOM_WIDTH } from "../scene/createGalleryRoom";
 
-const MOVE_SPEED_PER_FRAME = 0.075;
+const MOVE_SPEED_METERS_PER_SECOND = 4.5;
+const MOVEMENT_ACCELERATION = 8;
+const MOVEMENT_DECELERATION = 10;
+const CROUCH_EASE_SPEED = 7;
 const CAMERA_ROTATION_PER_FRAME = 0.032;
+const CAMERA_PITCH_EASE_SPEED = 9;
+const CAMERA_PITCH_DECELERATION = 12;
 const EYE_HEIGHT_METERS = 1.6;
+const CROUCH_EYE_HEIGHT_METERS = 1.25;
 const MIN_PITCH = -Math.PI / 2 + 0.08;
 const MAX_PITCH = Math.PI / 2 - 0.08;
 const ROOM_MARGIN = 0.45;
@@ -23,6 +29,8 @@ const CONTROL_KEYS = new Set([
 	"ArrowLeft",
 	"ArrowDown",
 	"ArrowRight",
+	"ShiftLeft",
+	"ShiftRight",
 ]);
 
 export class PlayerController {
@@ -32,7 +40,10 @@ export class PlayerController {
 	private readonly forward = new Vector3();
 	private readonly right = new Vector3();
 	private readonly movement = new Vector3();
+	private readonly velocity = new Vector3();
 	private readonly nextPosition = new Vector3();
+	private currentEyeHeight = EYE_HEIGHT_METERS;
+	private pitchVelocity = 0;
 
 	constructor(
 		private readonly scene: Scene,
@@ -63,7 +74,7 @@ export class PlayerController {
 	private createControlsHint(root: HTMLElement): void {
 		const hint = document.createElement("div");
 		hint.className = "controls-hint";
-		hint.textContent = "WASD move · Arrow keys look";
+		hint.textContent = "WASD move · Arrow keys look · Shift crouch";
 		root.appendChild(hint);
 	}
 
@@ -89,9 +100,11 @@ export class PlayerController {
 	}
 
 	private update(): void {
-		const frameScale = this.scene.getEngine().getDeltaTime() / 16.667;
-		this.updateCameraRotation(frameScale);
-		this.camera.position.y = EYE_HEIGHT_METERS;
+		const deltaSeconds = this.scene.getEngine().getDeltaTime() / 1000;
+		const frameScale = deltaSeconds * 60;
+		this.updateCameraRotation(deltaSeconds, frameScale);
+		this.updateEyeHeight(deltaSeconds);
+		this.camera.position.y = this.currentEyeHeight;
 		this.camera.getDirectionToRef(LOCAL_FORWARD, this.forward);
 		this.camera.getDirectionToRef(LOCAL_RIGHT, this.right);
 
@@ -114,36 +127,96 @@ export class PlayerController {
 			this.movement.subtractInPlace(this.right);
 		}
 
-		if (this.movement.lengthSquared() === 0) {
+		this.updateVelocity(deltaSeconds);
+
+		if (this.velocity.lengthSquared() < 0.000001) {
+			this.velocity.setAll(0);
 			return;
 		}
 
-		this.movement.normalize().scaleInPlace(MOVE_SPEED_PER_FRAME * frameScale);
-		this.nextPosition.copyFrom(this.camera.position).addInPlace(this.movement);
+		this.nextPosition
+			.copyFrom(this.camera.position)
+			.addInPlace(this.velocity.scale(deltaSeconds));
 		this.constrainToRoom(this.nextPosition);
 		this.constrainAgainstPedestals(this.nextPosition);
-		this.nextPosition.y = EYE_HEIGHT_METERS;
+		this.nextPosition.y = this.currentEyeHeight;
 		this.camera.position.copyFrom(this.nextPosition);
 	}
 
-	private updateCameraRotation(frameScale: number): void {
+	private updateEyeHeight(deltaSeconds: number): void {
+		const targetEyeHeight = this.getTargetEyeHeight();
+		const crouchAlpha = this.getEaseAlpha(CROUCH_EASE_SPEED, deltaSeconds);
+		this.currentEyeHeight +=
+			(targetEyeHeight - this.currentEyeHeight) * crouchAlpha;
+	}
+
+	private updateVelocity(deltaSeconds: number): void {
+		const hasMovementInput = this.movement.lengthSquared() > 0;
+
+		if (hasMovementInput) {
+			this.movement.normalize().scaleInPlace(MOVE_SPEED_METERS_PER_SECOND);
+		}
+
+		const easeSpeed = hasMovementInput
+			? MOVEMENT_ACCELERATION
+			: MOVEMENT_DECELERATION;
+		const movementAlpha = this.getEaseAlpha(easeSpeed, deltaSeconds);
+		this.velocity.x += (this.movement.x - this.velocity.x) * movementAlpha;
+		this.velocity.z += (this.movement.z - this.velocity.z) * movementAlpha;
+	}
+
+	private getEaseAlpha(speed: number, deltaSeconds: number): number {
+		return 1 - Math.exp(-speed * deltaSeconds);
+	}
+
+	private getTargetEyeHeight(): number {
+		return this.pressedKeys.has("ShiftLeft") ||
+			this.pressedKeys.has("ShiftRight")
+			? CROUCH_EYE_HEIGHT_METERS
+			: EYE_HEIGHT_METERS;
+	}
+
+	private updateCameraRotation(deltaSeconds: number, frameScale: number): void {
 		if (this.pressedKeys.has("ArrowLeft")) {
 			this.camera.rotation.y -= CAMERA_ROTATION_PER_FRAME * frameScale;
 		}
 		if (this.pressedKeys.has("ArrowRight")) {
 			this.camera.rotation.y += CAMERA_ROTATION_PER_FRAME * frameScale;
 		}
+
+		let targetPitchVelocity = 0;
 		if (this.pressedKeys.has("ArrowUp")) {
-			this.camera.rotation.x = Math.max(
-				MIN_PITCH,
-				this.camera.rotation.x - CAMERA_ROTATION_PER_FRAME * frameScale,
-			);
+			targetPitchVelocity -= CAMERA_ROTATION_PER_FRAME * 60;
 		}
 		if (this.pressedKeys.has("ArrowDown")) {
-			this.camera.rotation.x = Math.min(
+			targetPitchVelocity += CAMERA_ROTATION_PER_FRAME * 60;
+		}
+
+		const hasPitchInput = targetPitchVelocity !== 0;
+		const easeSpeed = hasPitchInput
+			? CAMERA_PITCH_EASE_SPEED
+			: CAMERA_PITCH_DECELERATION;
+		const pitchAlpha = this.getEaseAlpha(easeSpeed, deltaSeconds);
+		this.pitchVelocity +=
+			(targetPitchVelocity - this.pitchVelocity) * pitchAlpha;
+
+		if (Math.abs(this.pitchVelocity) < 0.0001) {
+			this.pitchVelocity = 0;
+			return;
+		}
+
+		this.camera.rotation.x = Math.max(
+			MIN_PITCH,
+			Math.min(
 				MAX_PITCH,
-				this.camera.rotation.x + CAMERA_ROTATION_PER_FRAME * frameScale,
-			);
+				this.camera.rotation.x + this.pitchVelocity * deltaSeconds,
+			),
+		);
+		if (
+			this.camera.rotation.x === MIN_PITCH ||
+			this.camera.rotation.x === MAX_PITCH
+		) {
+			this.pitchVelocity = 0;
 		}
 	}
 

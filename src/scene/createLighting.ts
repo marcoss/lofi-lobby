@@ -32,16 +32,16 @@ const EXHIBIT_LIGHT_RIG = {
 };
 
 export function createLighting(scene: Scene, shadowCasters: Mesh[]): void {
-	scene.ambientColor = Color3.FromHexString("#353a42");
+	scene.ambientColor = Color3.FromHexString("#3b414a");
 
 	const ambient = new HemisphericLight(
 		"low-gallery-ambient",
 		new Vector3(0, 1, 0),
 		scene,
 	);
-	ambient.intensity = 0.38;
-	ambient.diffuse = Color3.FromHexString("#b9c0c8");
-	ambient.groundColor = Color3.FromHexString("#5f656c");
+	ambient.intensity = 0.43;
+	ambient.diffuse = Color3.FromHexString("#c2c9d0");
+	ambient.groundColor = Color3.FromHexString("#6a7078");
 
 	createCeilingTracks(scene);
 
