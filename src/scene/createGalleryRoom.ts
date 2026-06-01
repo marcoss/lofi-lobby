@@ -5,7 +5,6 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import type { Scene } from "@babylonjs/core/scene";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
-import brickWallTextureUrl from "../assets/brick_wall_006_diff_1k.webp";
 import floorTextureUrl from "../assets/laminate_floor_02_diff_1k.webp";
 
 export type GalleryRoom = {
@@ -21,7 +20,30 @@ const WALL_THICKNESS = 0.35;
 
 export function createGalleryRoom(scene: Scene): GalleryRoom {
 	const floorMaterial = createFloorMaterial(scene);
-	const wallMaterial = createBrickWallMaterial(scene);
+	const northWallMaterial = createMaterial(
+		"north-charcoal-wall",
+		"#33383e",
+		"#272b30",
+		scene,
+	);
+	const southWallMaterial = createMaterial(
+		"south-slate-wall",
+		"#303b45",
+		"#272f36",
+		scene,
+	);
+	const eastWallMaterial = createMaterial(
+		"east-graphite-wall",
+		"#3d4041",
+		"#2c2f30",
+		scene,
+	);
+	const westWallMaterial = createMaterial(
+		"west-blueblack-wall",
+		"#29353f",
+		"#222b33",
+		scene,
+	);
 	const ceilingMaterial = createMaterial(
 		"black-ceiling-material",
 		"#050506",
@@ -34,31 +56,12 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 		"#5f4530",
 		scene,
 	);
-	const runnerMaterial = createMaterial(
-		"muted-gallery-runner-material",
-		"#4d342d",
-		"#251917",
-		scene,
-	);
 	const ceilingDetailMaterial = createMaterial(
 		"ceiling-detail-material",
 		"#111316",
 		"#555b62",
 		scene,
 	);
-	const benchMaterial = createMaterial(
-		"minimal-bench-material",
-		"#241912",
-		"#8a684b",
-		scene,
-	);
-	const benchLegMaterial = createMaterial(
-		"minimal-bench-leg-material",
-		"#111316",
-		"#60656c",
-		scene,
-	);
-
 	const floor = MeshBuilder.CreateGround(
 		"floor",
 		{ width: ROOM_WIDTH, height: ROOM_DEPTH },
@@ -68,9 +71,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 	floor.checkCollisions = false;
 	floor.receiveShadows = true;
 
-	createFloorRunner(scene, runnerMaterial);
 	createBaseboards(scene, baseboardMaterial);
-	createMuseumBench(scene, benchMaterial, benchLegMaterial);
 
 	const ceiling = MeshBuilder.CreateBox(
 		"black-ceiling",
@@ -89,7 +90,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 			ROOM_WIDTH,
 			WALL_HEIGHT,
 			WALL_THICKNESS,
-			wallMaterial,
+			northWallMaterial,
 			scene,
 		),
 		createWall(
@@ -98,7 +99,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 			ROOM_WIDTH,
 			WALL_HEIGHT,
 			WALL_THICKNESS,
-			wallMaterial,
+			southWallMaterial,
 			scene,
 		),
 		createWall(
@@ -107,7 +108,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 			WALL_THICKNESS,
 			WALL_HEIGHT,
 			ROOM_DEPTH + WALL_THICKNESS * 2,
-			wallMaterial,
+			eastWallMaterial,
 			scene,
 		),
 		createWall(
@@ -116,7 +117,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 			WALL_THICKNESS,
 			WALL_HEIGHT,
 			ROOM_DEPTH + WALL_THICKNESS * 2,
-			wallMaterial,
+			westWallMaterial,
 			scene,
 		),
 	];
@@ -153,21 +154,6 @@ function createFloorMaterial(scene: Scene): StandardMaterial {
 	texture.vScale = ROOM_DEPTH / 2.4;
 	material.diffuseTexture = texture;
 	material.specularPower = 48;
-	return material;
-}
-
-function createBrickWallMaterial(scene: Scene): StandardMaterial {
-	const material = createMaterial(
-		"brick-wall-material",
-		"#ffffff",
-		"#332822",
-		scene,
-	);
-	const texture = new Texture(brickWallTextureUrl, scene);
-	texture.uScale = 8;
-	texture.vScale = 2.5;
-	material.diffuseTexture = texture;
-	material.specularPower = 18;
 	return material;
 }
 
@@ -208,63 +194,6 @@ function createCeilingDetails(scene: Scene, material: StandardMaterial): void {
 		conduit.position = new Vector3(x, WALL_HEIGHT - 0.22, 0);
 		conduit.rotation.x = Math.PI / 2;
 		conduit.material = material;
-	}
-}
-
-function createMuseumBench(
-	scene: Scene,
-	seatMaterial: StandardMaterial,
-	legMaterial: StandardMaterial,
-): void {
-	const seat = MeshBuilder.CreateBox(
-		"minimal-gallery-bench-seat",
-		{ width: 3.2, height: 0.16, depth: 0.72 },
-		scene,
-	);
-	seat.position = new Vector3(0, 0.58, -3.1);
-	seat.material = seatMaterial;
-	seat.receiveShadows = true;
-
-	for (const x of [-1.25, 1.25]) {
-		for (const z of [-0.22, 0.22]) {
-			const leg = MeshBuilder.CreateBox(
-				`minimal-gallery-bench-leg-${x}-${z}`,
-				{ width: 0.11, height: 0.96, depth: 0.11 },
-				scene,
-			);
-			leg.position = new Vector3(x, 0.26, -3.1 + z);
-			leg.material = legMaterial;
-			leg.receiveShadows = true;
-		}
-	}
-}
-
-function createFloorRunner(scene: Scene, material: StandardMaterial): void {
-	const runnerY = 0.03;
-	const runnerDepth = ROOM_DEPTH - 3.2;
-	const runner = MeshBuilder.CreateBox(
-		"muted-gallery-runner",
-		{ width: 2.25, height: 0.018, depth: runnerDepth },
-		scene,
-	);
-	runner.position = new Vector3(0, runnerY, 0);
-	runner.material = material;
-	runner.receiveShadows = true;
-
-	const hemMaterial = createMaterial(
-		"muted-gallery-runner-hem-material",
-		"#34231f",
-		"#1b1110",
-		scene,
-	);
-	for (const x of [-1.05, 1.05]) {
-		const hem = MeshBuilder.CreateBox(
-			`runner-hem-${x}`,
-			{ width: 0.08, height: 0.008, depth: runnerDepth - 0.28 },
-			scene,
-		);
-		hem.position = new Vector3(x, runnerY + 0.014, 0);
-		hem.material = hemMaterial;
 	}
 }
 
