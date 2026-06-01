@@ -8,6 +8,7 @@ import { ExhibitPanel } from "../ui/ExhibitPanel";
 import { createGalleryRoom } from "./createGalleryRoom";
 import { createLighting } from "./createLighting";
 import { createPedestals } from "./createPedestals";
+import { YouTubeFrame } from "./createYouTubeFrame";
 
 export function createScene(
 	engine: Engine,
@@ -21,6 +22,7 @@ export function createScene(
 	const player = new PlayerController(scene, canvas, hudRoot);
 	const room = createGalleryRoom(scene);
 	const pedestals = createPedestals(scene);
+	new YouTubeFrame(scene, hudRoot, player.position);
 	createLighting(scene, [...room.collisionMeshes, ...pedestals.shadowCasters]);
 
 	const exhibitSystem = new ExhibitSystem(EXHIBITS);

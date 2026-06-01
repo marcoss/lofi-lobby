@@ -9,40 +9,60 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import type { Scene } from "@babylonjs/core/scene";
+import type { Exhibit } from "../exhibits/exhibitData";
 import { EXHIBITS } from "../exhibits/exhibitData";
+import { ROOM_DEPTH, ROOM_WIDTH } from "./createGalleryRoom";
 
-const LIGHT_HEIGHT = 6.55;
+const EXHIBIT_LIGHT_RIG = {
+	lightHeight: 6.55,
+	spotAngle: Math.PI / 4.6,
+	spotExponent: 2.4,
+	spotIntensity: 3.05,
+	spotRange: 9.0,
+	floorGlowHeight: 0.55,
+	floorGlowIntensity: 0.84,
+	floorGlowRange: 3.4,
+	floorGlowDiameter: 3.2,
+	fixtureDiameter: 0.72,
+	bulbDiameter: 0.32,
+};
 
 export function createLighting(scene: Scene, shadowCasters: Mesh[]): void {
-	scene.ambientColor = Color3.FromHexString("#1b1d21");
+	scene.ambientColor = Color3.FromHexString("#24272c");
 
 	const ambient = new HemisphericLight(
 		"low-gallery-ambient",
 		new Vector3(0, 1, 0),
 		scene,
 	);
-	ambient.intensity = 0.18;
-	ambient.diffuse = Color3.FromHexString("#8f969d");
-	ambient.groundColor = Color3.FromHexString("#151719");
+	ambient.intensity = 0.22;
+	ambient.diffuse = Color3.FromHexString("#a8afb6");
+	ambient.groundColor = Color3.FromHexString("#242628");
 
-	for (const [index, exhibit] of EXHIBITS.entries()) {
-		const position = new Vector3(
-			exhibit.position.x,
-			LIGHT_HEIGHT,
-			exhibit.position.z,
-		);
-		createLightFixture(`exhibit-fixture-${exhibit.id}`, position, scene);
-		createCeilingSpot(
-			`exhibit-spot-${exhibit.id}`,
-			position,
-			index < 2 ? shadowCasters : [],
-			scene,
-		);
-		createFloorGlow(`floor-glow-${exhibit.id}`, exhibit.position, scene);
+	for (const exhibit of EXHIBITS) {
+		createExhibitLightRig(exhibit, scene, shadowCasters);
 	}
+
+	createCornerFillLights(scene);
 }
 
-function createCeilingSpot(
+function createExhibitLightRig(
+	exhibit: Exhibit,
+	scene: Scene,
+	shadowCasters: Mesh[],
+): void {
+	const ceilingPosition = new Vector3(
+		exhibit.position.x,
+		EXHIBIT_LIGHT_RIG.lightHeight,
+		exhibit.position.z,
+	);
+
+	createLightFixture(`exhibit-fixture-${exhibit.id}`, ceilingPosition, scene);
+	createPrimaryDownlight(`exhibit-downlight-${exhibit.id}`, ceilingPosition, shadowCasters, scene);
+	createFloorGlow(`floor-glow-${exhibit.id}`, exhibit.position, scene);
+}
+
+function createPrimaryDownlight(
 	name: string,
 	position: Vector3,
 	shadowCasters: Mesh[],
@@ -52,14 +72,14 @@ function createCeilingSpot(
 		name,
 		position,
 		new Vector3(0, -1, 0),
-		Math.PI / 5.2,
-		2.6,
+		EXHIBIT_LIGHT_RIG.spotAngle,
+		EXHIBIT_LIGHT_RIG.spotExponent,
 		scene,
 	);
 	light.diffuse = Color3.FromHexString("#f5f6f2");
 	light.specular = Color3.White();
-	light.intensity = 2.6;
-	light.range = 8.0;
+	light.intensity = EXHIBIT_LIGHT_RIG.spotIntensity;
+	light.range = EXHIBIT_LIGHT_RIG.spotRange;
 
 	if (shadowCasters.length === 0) {
 		return;
@@ -77,37 +97,50 @@ function createCeilingSpot(
 function createFloorGlow(name: string, position: Vector3, scene: Scene): void {
 	const light = new PointLight(
 		`${name}-light`,
-		new Vector3(position.x, 0.55, position.z),
+		new Vector3(position.x, EXHIBIT_LIGHT_RIG.floorGlowHeight, position.z),
 		scene,
 	);
 	light.diffuse = Color3.FromHexString("#dfe4e7");
 	light.specular = Color3.FromHexString("#ffffff");
-	light.intensity = 0.72;
-	light.range = 3.0;
+	light.intensity = EXHIBIT_LIGHT_RIG.floorGlowIntensity;
+	light.range = EXHIBIT_LIGHT_RIG.floorGlowRange;
 
 	const glowMaterial = new StandardMaterial(`${name}-material`, scene);
+	glowMaterial.maxSimultaneousLights = 16;
 	glowMaterial.diffuseColor = Color3.FromHexString("#dfe4e7");
 	glowMaterial.emissiveColor = Color3.FromHexString("#dfe4e7");
-	glowMaterial.alpha = 0.16;
+	glowMaterial.alpha = 0.2;
 
 	const glow = MeshBuilder.CreateCylinder(
 		name,
-		{ diameter: 2.8, height: 0.01, tessellation: 48 },
+		{ diameter: EXHIBIT_LIGHT_RIG.floorGlowDiameter, height: 0.01, tessellation: 48 },
 		scene,
 	);
 	glow.position = new Vector3(position.x, 0.012, position.z);
 	glow.material = glowMaterial;
 }
 
-function createLightFixture(
-	name: string,
-	position: Vector3,
-	scene: Scene,
-): void {
-	const fixtureMaterial = new StandardMaterial(
-		`${name}-fixture-material`,
-		scene,
-	);
+function createCornerFillLights(scene: Scene): void {
+	const cornerInset = 2.5;
+	const y = 2.2;
+	const positions = [
+		new Vector3(-ROOM_WIDTH / 2 + cornerInset, y, -ROOM_DEPTH / 2 + cornerInset),
+		new Vector3(ROOM_WIDTH / 2 - cornerInset, y, -ROOM_DEPTH / 2 + cornerInset),
+		new Vector3(-ROOM_WIDTH / 2 + cornerInset, y, ROOM_DEPTH / 2 - cornerInset),
+		new Vector3(ROOM_WIDTH / 2 - cornerInset, y, ROOM_DEPTH / 2 - cornerInset),
+	];
+
+	for (const [index, position] of positions.entries()) {
+		const light = new PointLight(`corner-fill-${index + 1}`, position, scene);
+		light.diffuse = Color3.FromHexString("#6f7680");
+		light.specular = Color3.Black();
+		light.intensity = 0.14;
+		light.range = 6.5;
+	}
+}
+
+function createLightFixture(name: string, position: Vector3, scene: Scene): void {
+	const fixtureMaterial = new StandardMaterial(`${name}-fixture-material`, scene);
 	fixtureMaterial.diffuseColor = Color3.FromHexString("#0a0b0d");
 	fixtureMaterial.specularColor = Color3.FromHexString("#4f545a");
 
@@ -117,7 +150,7 @@ function createLightFixture(
 
 	const fixture = MeshBuilder.CreateCylinder(
 		name,
-		{ diameter: 0.72, height: 0.18, tessellation: 32 },
+		{ diameter: EXHIBIT_LIGHT_RIG.fixtureDiameter, height: 0.18, tessellation: 32 },
 		scene,
 	);
 	fixture.position = position;
@@ -125,7 +158,7 @@ function createLightFixture(
 
 	const bulb = MeshBuilder.CreateSphere(
 		`${name}-bulb`,
-		{ diameter: 0.32, segments: 16 },
+		{ diameter: EXHIBIT_LIGHT_RIG.bulbDiameter, segments: 16 },
 		scene,
 	);
 	bulb.position = new Vector3(position.x, position.y - 0.14, position.z);

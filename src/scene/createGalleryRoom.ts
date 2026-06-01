@@ -19,32 +19,32 @@ const WALL_THICKNESS = 0.35;
 export function createGalleryRoom(scene: Scene): GalleryRoom {
 	const floorMaterial = createMaterial(
 		"polished-concrete-material",
-		"#6d6d69",
-		"#9b9b96",
+		"#7b7b76",
+		"#aaa9a3",
 		scene,
 	);
 	const northWallMaterial = createMaterial(
 		"north-charcoal-wall",
-		"#2b2f34",
-		"#202327",
+		"#33383e",
+		"#272b30",
 		scene,
 	);
 	const southWallMaterial = createMaterial(
 		"south-slate-wall",
-		"#27313a",
-		"#1f252b",
+		"#303b45",
+		"#272f36",
 		scene,
 	);
 	const eastWallMaterial = createMaterial(
 		"east-graphite-wall",
-		"#343637",
-		"#242627",
+		"#3d4041",
+		"#2c2f30",
 		scene,
 	);
 	const westWallMaterial = createMaterial(
 		"west-blueblack-wall",
-		"#202a32",
-		"#1b2228",
+		"#29353f",
+		"#222b33",
 		scene,
 	);
 	const ceilingMaterial = createMaterial(
@@ -133,6 +133,7 @@ function createMaterial(
 	scene: Scene,
 ): StandardMaterial {
 	const material = new StandardMaterial(name, scene);
+	material.maxSimultaneousLights = 16;
 	material.diffuseColor = Color3.FromHexString(diffuse);
 	material.specularColor = Color3.FromHexString(specular);
 	return material;

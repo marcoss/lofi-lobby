@@ -13,6 +13,7 @@ export type PedestalSetup = {
 
 export function createPedestals(scene: Scene): PedestalSetup {
 	const pedestalMaterial = new StandardMaterial("pedestal-material", scene);
+	pedestalMaterial.maxSimultaneousLights = 16;
 	pedestalMaterial.diffuseColor = Color3.FromHexString("#f4f1ea");
 	pedestalMaterial.specularColor = Color3.FromHexString("#8c887f");
 
@@ -46,6 +47,7 @@ export function createPedestals(scene: Scene): PedestalSetup {
 
 function createFruit(id: string, color: string, scene: Scene): Mesh {
 	const material = new StandardMaterial(`${id}-material`, scene);
+	material.maxSimultaneousLights = 16;
 	material.diffuseColor = Color3.FromHexString(color);
 	material.specularColor = Color3.FromHexString("#2a2118");
 
