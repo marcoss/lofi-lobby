@@ -42,12 +42,4 @@ export const EXHIBITS: Exhibit[] = [
 		radius: 1.5,
 		color: "#e68b2d",
 	},
-	{
-		id: "plum",
-		title: "Plum Form",
-		author: "Rae Finch",
-		position: new Vector3(0, 0, 0),
-		radius: 1.5,
-		color: "#74519b",
-	},
 ];

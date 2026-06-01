@@ -31,6 +31,17 @@ const EXHIBIT_LIGHT_RIG = {
 	bulbDiameter: 0.32,
 };
 
+const WALL_LIGHT_RIG = {
+	lightHeight: 5.9,
+	wallTargetHeight: 1.8,
+	wallInset: 1.35,
+	angle: Math.PI / 5.2,
+	exponent: 1.7,
+	intensity: 0.92,
+	range: 8.0,
+	fixtureWidth: 0.42,
+};
+
 export function createLighting(scene: Scene, shadowCasters: Mesh[]): void {
 	scene.ambientColor = Color3.FromHexString("#3b414a");
 
@@ -47,6 +58,7 @@ export function createLighting(scene: Scene, shadowCasters: Mesh[]): void {
 
 	for (const exhibit of EXHIBITS) {
 		createExhibitLightRig(exhibit, scene, shadowCasters);
+		createWallSpotlight(exhibit, scene);
 	}
 
 	createCornerFillLights(scene);
@@ -128,6 +140,63 @@ function createSoftSpillDownlight(
 	light.specular = Color3.Black();
 	light.intensity = EXHIBIT_LIGHT_RIG.spillIntensity;
 	light.range = EXHIBIT_LIGHT_RIG.spillRange;
+}
+
+function createWallSpotlight(exhibit: Exhibit, scene: Scene): void {
+	const northWall = exhibit.position.z >= 0;
+	const wallZ = northWall ? ROOM_DEPTH / 2 - 0.08 : -ROOM_DEPTH / 2 + 0.08;
+	const lightZ = northWall
+		? ROOM_DEPTH / 2 - WALL_LIGHT_RIG.wallInset
+		: -ROOM_DEPTH / 2 + WALL_LIGHT_RIG.wallInset;
+	const position = new Vector3(
+		exhibit.position.x,
+		WALL_LIGHT_RIG.lightHeight,
+		lightZ,
+	);
+	const target = new Vector3(
+		exhibit.position.x,
+		WALL_LIGHT_RIG.wallTargetHeight,
+		wallZ,
+	);
+	const direction = target.subtract(position).normalize();
+	const light = new SpotLight(
+		`wall-spot-${exhibit.id}`,
+		position,
+		direction,
+		WALL_LIGHT_RIG.angle,
+		WALL_LIGHT_RIG.exponent,
+		scene,
+	);
+	light.diffuse = Color3.FromHexString("#fff0d4");
+	light.specular = Color3.FromHexString("#fff7e8");
+	light.intensity = WALL_LIGHT_RIG.intensity;
+	light.range = WALL_LIGHT_RIG.range;
+	createWallSpotFixture(
+		`wall-spot-fixture-${exhibit.id}`,
+		position,
+		northWall,
+		scene,
+	);
+}
+
+function createWallSpotFixture(
+	name: string,
+	position: Vector3,
+	northWall: boolean,
+	scene: Scene,
+): void {
+	const material = new StandardMaterial(`${name}-material`, scene);
+	material.diffuseColor = Color3.FromHexString("#101216");
+	material.specularColor = Color3.FromHexString("#555b63");
+
+	const fixture = MeshBuilder.CreateBox(
+		name,
+		{ width: WALL_LIGHT_RIG.fixtureWidth, height: 0.16, depth: 0.24 },
+		scene,
+	);
+	fixture.position = position;
+	fixture.rotation.x = northWall ? Math.PI * 0.18 : -Math.PI * 0.18;
+	fixture.material = material;
 }
 
 function createFloorGlow(name: string, position: Vector3, scene: Scene): void {

@@ -71,6 +71,24 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 		"#251917",
 		scene,
 	);
+	const ceilingDetailMaterial = createMaterial(
+		"ceiling-detail-material",
+		"#111316",
+		"#555b62",
+		scene,
+	);
+	const benchMaterial = createMaterial(
+		"minimal-bench-material",
+		"#241912",
+		"#8a684b",
+		scene,
+	);
+	const benchLegMaterial = createMaterial(
+		"minimal-bench-leg-material",
+		"#111316",
+		"#60656c",
+		scene,
+	);
 
 	const floor = MeshBuilder.CreateGround(
 		"floor",
@@ -84,6 +102,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 	createFloorSeams(scene, seamMaterial);
 	createFloorRunner(scene, runnerMaterial);
 	createBaseboards(scene, baseboardMaterial);
+	createMuseumBench(scene, benchMaterial, benchLegMaterial);
 
 	const ceiling = MeshBuilder.CreateBox(
 		"black-ceiling",
@@ -93,6 +112,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 	ceiling.position = new Vector3(0, WALL_HEIGHT + WALL_THICKNESS / 2, 0);
 	ceiling.material = ceilingMaterial;
 	ceiling.receiveShadows = true;
+	createCeilingDetails(scene, ceilingDetailMaterial);
 
 	const walls = [
 		createWall(
@@ -168,6 +188,57 @@ function createWall(
 	wall.checkCollisions = false;
 	wall.receiveShadows = true;
 	return wall;
+}
+
+function createCeilingDetails(scene: Scene, material: StandardMaterial): void {
+	for (let z = -ROOM_DEPTH / 2 + 2.2; z <= ROOM_DEPTH / 2 - 2.2; z += 2.2) {
+		const rafter = MeshBuilder.CreateBox(
+			`ceiling-rafter-${z.toFixed(1)}`,
+			{ width: ROOM_WIDTH - 1.2, height: 0.16, depth: 0.12 },
+			scene,
+		);
+		rafter.position = new Vector3(0, WALL_HEIGHT - 0.08, z);
+		rafter.material = material;
+	}
+
+	for (const x of [-5.5, 5.5]) {
+		const conduit = MeshBuilder.CreateCylinder(
+			`ceiling-conduit-${x}`,
+			{ diameter: 0.07, height: ROOM_DEPTH - 1.8, tessellation: 12 },
+			scene,
+		);
+		conduit.position = new Vector3(x, WALL_HEIGHT - 0.22, 0);
+		conduit.rotation.x = Math.PI / 2;
+		conduit.material = material;
+	}
+}
+
+function createMuseumBench(
+	scene: Scene,
+	seatMaterial: StandardMaterial,
+	legMaterial: StandardMaterial,
+): void {
+	const seat = MeshBuilder.CreateBox(
+		"minimal-gallery-bench-seat",
+		{ width: 3.2, height: 0.16, depth: 0.72 },
+		scene,
+	);
+	seat.position = new Vector3(0, 0.58, -3.1);
+	seat.material = seatMaterial;
+	seat.receiveShadows = true;
+
+	for (const x of [-1.25, 1.25]) {
+		for (const z of [-0.22, 0.22]) {
+			const leg = MeshBuilder.CreateBox(
+				`minimal-gallery-bench-leg-${x}-${z}`,
+				{ width: 0.11, height: 0.96, depth: 0.11 },
+				scene,
+			);
+			leg.position = new Vector3(x, 0.26, -3.1 + z);
+			leg.material = legMaterial;
+			leg.receiveShadows = true;
+		}
+	}
 }
 
 function createFloorRunner(scene: Scene, material: StandardMaterial): void {
