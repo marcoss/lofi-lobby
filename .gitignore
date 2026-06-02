@@ -1,4 +1,5 @@
 node_modules/
 dist/
+assets/
 .pi-lens/
 .DS_Store

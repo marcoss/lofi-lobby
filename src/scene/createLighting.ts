@@ -4,6 +4,7 @@ import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { PointLight } from "@babylonjs/core/Lights/pointLight";
 import { SpotLight } from "@babylonjs/core/Lights/spotLight";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { DynamicTexture } from "@babylonjs/core/Materials/Textures/dynamicTexture";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
@@ -40,6 +41,9 @@ const WALL_LIGHT_RIG = {
 	intensity: 0.92,
 	range: 8.0,
 	fixtureWidth: 0.42,
+	glowWidth: 3.2,
+	glowHeight: 1.9,
+	glowOffset: 0.055,
 };
 
 export function createLighting(scene: Scene, shadowCasters: Mesh[]): void {
@@ -177,6 +181,56 @@ function createWallSpotlight(exhibit: Exhibit, scene: Scene): void {
 		northWall,
 		scene,
 	);
+	createWallLightGlow(`wall-spot-glow-${exhibit.id}`, target, northWall, scene);
+}
+
+function createWallLightGlow(
+	name: string,
+	position: Vector3,
+	northWall: boolean,
+	scene: Scene,
+): void {
+	const glow = MeshBuilder.CreatePlane(
+		name,
+		{ width: WALL_LIGHT_RIG.glowWidth, height: WALL_LIGHT_RIG.glowHeight },
+		scene,
+	);
+	glow.position = new Vector3(
+		position.x,
+		position.y,
+		northWall
+			? position.z - WALL_LIGHT_RIG.glowOffset
+			: position.z + WALL_LIGHT_RIG.glowOffset,
+	);
+	glow.rotation.y = northWall ? Math.PI : 0;
+	glow.material = createWallGlowMaterial(name, scene);
+}
+
+function createWallGlowMaterial(name: string, scene: Scene): StandardMaterial {
+	const texture = new DynamicTexture(
+		`${name}-texture`,
+		{ width: 256, height: 160 },
+		scene,
+		true,
+	);
+	const context = texture.getContext();
+	const gradient = context.createRadialGradient(128, 80, 8, 128, 80, 128);
+	gradient.addColorStop(0, "rgba(255, 237, 198, 0.34)");
+	gradient.addColorStop(0.42, "rgba(255, 224, 168, 0.16)");
+	gradient.addColorStop(1, "rgba(255, 224, 168, 0)");
+	context.clearRect(0, 0, 256, 160);
+	context.fillStyle = gradient;
+	context.fillRect(0, 0, 256, 160);
+	texture.hasAlpha = true;
+	texture.update();
+
+	const material = new StandardMaterial(`${name}-material`, scene);
+	material.diffuseTexture = texture;
+	material.emissiveTexture = texture;
+	material.useAlphaFromDiffuseTexture = true;
+	material.disableLighting = true;
+	material.specularColor = Color3.Black();
+	return material;
 }
 
 function createWallSpotFixture(
