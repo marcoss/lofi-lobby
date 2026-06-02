@@ -29,7 +29,7 @@ const EXHIBIT_LIGHT_RIG = {
 	floorGlowRange: 3.4,
 	floorGlowDiameter: 3.2,
 	fixtureDiameter: 0.72,
-	bulbDiameter: 0.32,
+	bulbDiameter: 0.42,
 };
 
 const WALL_LIGHT_RIG = {
@@ -365,31 +365,27 @@ function createLightFixture(
 	glowMaterial.diffuseColor = Color3.FromHexString("#f5f6f2");
 	glowMaterial.emissiveColor = Color3.FromHexString("#f5f6f2");
 
-	const cable = MeshBuilder.CreateCylinder(
-		`${name}-cable`,
-		{ diameter: 0.035, height: 0.36, tessellation: 12 },
-		scene,
-	);
-	cable.position = new Vector3(position.x, position.y + 0.23, position.z);
-	cable.material = fixtureMaterial;
-
-	const fixture = MeshBuilder.CreateCylinder(
+	const trim = MeshBuilder.CreateCylinder(
 		name,
 		{
 			diameter: EXHIBIT_LIGHT_RIG.fixtureDiameter,
-			height: 0.18,
-			tessellation: 32,
+			height: 0.045,
+			tessellation: 40,
 		},
 		scene,
 	);
-	fixture.position = position;
-	fixture.material = fixtureMaterial;
+	trim.position = new Vector3(position.x, position.y + 0.04, position.z);
+	trim.material = fixtureMaterial;
 
-	const bulb = MeshBuilder.CreateSphere(
-		`${name}-bulb`,
-		{ diameter: EXHIBIT_LIGHT_RIG.bulbDiameter, segments: 16 },
+	const diffuser = MeshBuilder.CreateCylinder(
+		`${name}-diffuser`,
+		{
+			diameter: EXHIBIT_LIGHT_RIG.bulbDiameter,
+			height: 0.018,
+			tessellation: 40,
+		},
 		scene,
 	);
-	bulb.position = new Vector3(position.x, position.y - 0.14, position.z);
-	bulb.material = glowMaterial;
+	diffuser.position = new Vector3(position.x, position.y + 0.012, position.z);
+	diffuser.material = glowMaterial;
 }
