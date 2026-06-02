@@ -150,6 +150,26 @@ body,
 	transition: opacity 120ms ease;
 }
 
+.debug-stats {
+	position: absolute;
+	right: 16px;
+	bottom: 16px;
+	z-index: 2;
+	padding: 10px 12px;
+	border: 1px solid rgb(255 221 175 / 0.18);
+	border-radius: 10px;
+	background: rgb(5 5 5 / 0.68);
+	color: rgb(244 238 226 / 0.82);
+	font:
+		12px / 1.45 ui-monospace,
+		SFMono-Regular,
+		Menlo,
+		Consolas,
+		monospace;
+	white-space: pre;
+	backdrop-filter: blur(6px);
+}
+
 .fatal-error {
 	position: fixed;
 	inset: 24px;

@@ -2,15 +2,21 @@ import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
 import { EXHIBITS } from "../exhibits/exhibitData";
-import { ROOM_DEPTH, ROOM_WIDTH } from "../scene/createGalleryRoom";
+import {
+	CONNECTED_ROOM_MAX_X,
+	CONNECTED_ROOM_MIN_X,
+	DOORWAY_WIDTH,
+	ROOM_DEPTH,
+	ROOM_WIDTH,
+} from "../scene/createGalleryRoom";
 
 const MOVE_SPEED_METERS_PER_SECOND = 4.5;
 const MOVEMENT_ACCELERATION = 8;
 const MOVEMENT_DECELERATION = 10;
 const CROUCH_EASE_SPEED = 7;
 const CAMERA_ROTATION_PER_FRAME = 0.032;
-const CAMERA_PITCH_EASE_SPEED = 9;
-const CAMERA_PITCH_DECELERATION = 12;
+const CAMERA_ROTATION_EASE_SPEED = 9;
+const CAMERA_ROTATION_DECELERATION = 12;
 const EYE_HEIGHT_METERS = 1.6;
 const CROUCH_EYE_HEIGHT_METERS = 1.25;
 const MIN_PITCH = -Math.PI / 2 + 0.08;
@@ -43,6 +49,7 @@ export class PlayerController {
 	private readonly velocity = new Vector3();
 	private readonly nextPosition = new Vector3();
 	private currentEyeHeight = EYE_HEIGHT_METERS;
+	private yawVelocity = 0;
 	private pitchVelocity = 0;
 
 	constructor(
@@ -101,8 +108,7 @@ export class PlayerController {
 
 	private update(): void {
 		const deltaSeconds = this.scene.getEngine().getDeltaTime() / 1000;
-		const frameScale = deltaSeconds * 60;
-		this.updateCameraRotation(deltaSeconds, frameScale);
+		this.updateCameraRotation(deltaSeconds);
 		this.updateEyeHeight(deltaSeconds);
 		this.camera.position.y = this.currentEyeHeight;
 		this.camera.getDirectionToRef(LOCAL_FORWARD, this.forward);
@@ -176,12 +182,25 @@ export class PlayerController {
 			: EYE_HEIGHT_METERS;
 	}
 
-	private updateCameraRotation(deltaSeconds: number, frameScale: number): void {
+	private updateCameraRotation(deltaSeconds: number): void {
+		let targetYawVelocity = 0;
 		if (this.pressedKeys.has("ArrowLeft")) {
-			this.camera.rotation.y -= CAMERA_ROTATION_PER_FRAME * frameScale;
+			targetYawVelocity -= CAMERA_ROTATION_PER_FRAME * 60;
 		}
 		if (this.pressedKeys.has("ArrowRight")) {
-			this.camera.rotation.y += CAMERA_ROTATION_PER_FRAME * frameScale;
+			targetYawVelocity += CAMERA_ROTATION_PER_FRAME * 60;
+		}
+
+		const hasYawInput = targetYawVelocity !== 0;
+		const yawEaseSpeed = hasYawInput
+			? CAMERA_ROTATION_EASE_SPEED
+			: CAMERA_ROTATION_DECELERATION;
+		const yawAlpha = this.getEaseAlpha(yawEaseSpeed, deltaSeconds);
+		this.yawVelocity += (targetYawVelocity - this.yawVelocity) * yawAlpha;
+		if (Math.abs(this.yawVelocity) < 0.0001) {
+			this.yawVelocity = 0;
+		} else {
+			this.camera.rotation.y += this.yawVelocity * deltaSeconds;
 		}
 
 		let targetPitchVelocity = 0;
@@ -194,8 +213,8 @@ export class PlayerController {
 
 		const hasPitchInput = targetPitchVelocity !== 0;
 		const easeSpeed = hasPitchInput
-			? CAMERA_PITCH_EASE_SPEED
-			: CAMERA_PITCH_DECELERATION;
+			? CAMERA_ROTATION_EASE_SPEED
+			: CAMERA_ROTATION_DECELERATION;
 		const pitchAlpha = this.getEaseAlpha(easeSpeed, deltaSeconds);
 		this.pitchVelocity +=
 			(targetPitchVelocity - this.pitchVelocity) * pitchAlpha;
@@ -221,10 +240,31 @@ export class PlayerController {
 	}
 
 	private constrainToRoom(position: Vector3): void {
-		const maxX = ROOM_WIDTH / 2 - ROOM_MARGIN;
 		const maxZ = ROOM_DEPTH / 2 - ROOM_MARGIN;
-		position.x = Math.max(-maxX, Math.min(maxX, position.x));
+		const connectorX = ROOM_WIDTH / 2;
+		const doorwayHalfWidth = DOORWAY_WIDTH / 2 - ROOM_MARGIN;
+
+		position.x = Math.max(
+			CONNECTED_ROOM_MIN_X + ROOM_MARGIN,
+			Math.min(CONNECTED_ROOM_MAX_X - ROOM_MARGIN, position.x),
+		);
 		position.z = Math.max(-maxZ, Math.min(maxZ, position.z));
+
+		if (Math.abs(position.z) <= doorwayHalfWidth) {
+			return;
+		}
+
+		if (
+			this.camera.position.x < connectorX &&
+			position.x > connectorX - ROOM_MARGIN
+		) {
+			position.x = connectorX - ROOM_MARGIN;
+		} else if (
+			this.camera.position.x > connectorX &&
+			position.x < connectorX + ROOM_MARGIN
+		) {
+			position.x = connectorX + ROOM_MARGIN;
+		}
 	}
 
 	private constrainAgainstPedestals(position: Vector3): void {

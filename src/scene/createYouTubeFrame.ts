@@ -5,8 +5,12 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import type { Scene } from "@babylonjs/core/scene";
 import { ROOM_DEPTH } from "./createGalleryRoom";
 
-const YOUTUBE_VIDEO_ID = "6bPN0JyGfA4";
-const EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&loop=1&playlist=${YOUTUBE_VIDEO_ID}&mute=1&controls=0&playsinline=1&rel=0`;
+const MEDIA_FRAME = {
+	id: "tv-2f4a9d8e-7a3b-4a7a-95c6-0d7e8b9a13f2",
+	roomId: "room-west-gallery",
+	youtubeVideoId: "6bPN0JyGfA4",
+} as const;
+const EMBED_URL = `https://www.youtube.com/embed/${MEDIA_FRAME.youtubeVideoId}?autoplay=1&loop=1&playlist=${MEDIA_FRAME.youtubeVideoId}&mute=1&controls=0&playsinline=1&rel=0`;
 const FRAME_POSITION = new Vector3(0, 3.35, ROOM_DEPTH / 2 - 0.04);
 const FRAME_WIDTH = 4.8;
 const FRAME_HEIGHT = 2.7;
@@ -23,10 +27,12 @@ export class YouTubeFrame {
 		new Vector3(),
 		new Vector3(),
 	];
+	private isPlaying = false;
 
 	constructor(
 		private readonly scene: Scene,
 		hudRoot: HTMLElement,
+		private readonly getPlayerRoomId: () => string,
 	) {
 		this.createMeshes(scene);
 		this.iframe = this.createAutoplayFrame(hudRoot);
@@ -93,8 +99,9 @@ export class YouTubeFrame {
 	private createAutoplayFrame(root: HTMLElement): HTMLIFrameElement {
 		const iframe = document.createElement("iframe");
 		iframe.className = "wall-youtube-frame";
+		iframe.id = MEDIA_FRAME.id;
 		iframe.title = "Museum wall YouTube video";
-		iframe.src = EMBED_URL;
+		iframe.dataset.src = EMBED_URL;
 		iframe.allow = "autoplay; encrypted-media; picture-in-picture";
 		iframe.allowFullscreen = true;
 		iframe.width = String(IFRAME_WIDTH);
@@ -137,9 +144,10 @@ export class YouTubeFrame {
 			);
 		}
 
-		const visible = this.corners.every(
+		const projectedVisible = this.corners.every(
 			(corner) => corner.z > 0 && corner.z < 1,
 		);
+		const visible = projectedVisible && this.isPlayerInFrameRoom();
 		const points = this.corners.map((corner) => ({
 			x: bounds.left + corner.x,
 			y: bounds.top + corner.y,
@@ -154,9 +162,31 @@ export class YouTubeFrame {
 			points,
 		);
 
+		this.setPlayback(visible);
 		this.iframe.style.opacity = visible ? "1" : "0";
 		this.iframe.style.pointerEvents = visible ? "auto" : "none";
 		this.iframe.style.transform = matrix;
+	}
+
+	getDebugInfo(): { id: string; videoId: string; isPlaying: boolean } {
+		return {
+			id: MEDIA_FRAME.id,
+			videoId: MEDIA_FRAME.youtubeVideoId,
+			isPlaying: this.isPlaying,
+		};
+	}
+
+	private isPlayerInFrameRoom(): boolean {
+		return this.getPlayerRoomId() === MEDIA_FRAME.roomId;
+	}
+
+	private setPlayback(shouldPlay: boolean): void {
+		if (shouldPlay === this.isPlaying) {
+			return;
+		}
+
+		this.isPlaying = shouldPlay;
+		this.iframe.src = shouldPlay ? EMBED_URL : "about:blank";
 	}
 }
 
