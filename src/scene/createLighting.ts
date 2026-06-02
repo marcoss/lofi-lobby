@@ -12,22 +12,22 @@ import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator"
 import type { Scene } from "@babylonjs/core/scene";
 import type { Exhibit } from "../exhibits/exhibitData";
 import { EXHIBITS } from "../exhibits/exhibitData";
-import { ROOM_DEPTH, ROOM_WIDTH } from "./createGalleryRoom";
+import { DOORWAY_WIDTH, ROOM_DEPTH, ROOM_WIDTH } from "./createGalleryRoom";
 
 const EXHIBIT_LIGHT_RIG = {
 	lightHeight: 6.55,
-	spotAngle: Math.PI / 3.9,
-	spotExponent: 1.45,
-	spotIntensity: 2.65,
-	spotRange: 11.0,
-	spillAngle: Math.PI / 2.55,
-	spillExponent: 0.85,
-	spillIntensity: 0.42,
-	spillRange: 12.5,
-	floorGlowHeight: 0.55,
-	floorGlowIntensity: 0.84,
-	floorGlowRange: 3.4,
-	floorGlowDiameter: 3.2,
+	spotAngle: Math.PI / 4.4,
+	spotExponent: 1.75,
+	spotIntensity: 3.15,
+	spotRange: 9.5,
+	spillAngle: Math.PI / 2.8,
+	spillExponent: 1.0,
+	spillIntensity: 0.26,
+	spillRange: 10.5,
+	floorGlowHeight: 0.45,
+	floorGlowIntensity: 0.52,
+	floorGlowRange: 3.0,
+	floorGlowDiameter: 3.9,
 	fixtureDiameter: 0.72,
 	bulbDiameter: 0.42,
 };
@@ -47,16 +47,16 @@ const WALL_LIGHT_RIG = {
 };
 
 export function createLighting(scene: Scene, shadowCasters: Mesh[]): void {
-	scene.ambientColor = Color3.FromHexString("#3b414a");
+	scene.ambientColor = Color3.FromHexString("#535b66");
 
 	const ambient = new HemisphericLight(
 		"low-gallery-ambient",
 		new Vector3(0, 1, 0),
 		scene,
 	);
-	ambient.intensity = 0.43;
-	ambient.diffuse = Color3.FromHexString("#c2c9d0");
-	ambient.groundColor = Color3.FromHexString("#6a7078");
+	ambient.intensity = 0.58;
+	ambient.diffuse = Color3.FromHexString("#d7dde4");
+	ambient.groundColor = Color3.FromHexString("#858b94");
 
 	createCeilingTracks(scene);
 
@@ -65,6 +65,7 @@ export function createLighting(scene: Scene, shadowCasters: Mesh[]): void {
 		createWallSpotlight(exhibit, scene);
 	}
 
+	createDoorwayRimLight(scene);
 	createCornerFillLights(scene);
 	createWarmWallBounceLights(scene);
 }
@@ -109,8 +110,8 @@ function createPrimaryDownlight(
 		EXHIBIT_LIGHT_RIG.spotExponent,
 		scene,
 	);
-	light.diffuse = Color3.FromHexString("#f5f6f2");
-	light.specular = Color3.White();
+	light.diffuse = Color3.FromHexString("#ffe2ad");
+	light.specular = Color3.FromHexString("#fff3d7");
 	light.intensity = EXHIBIT_LIGHT_RIG.spotIntensity;
 	light.range = EXHIBIT_LIGHT_RIG.spotRange;
 
@@ -140,7 +141,7 @@ function createSoftSpillDownlight(
 		EXHIBIT_LIGHT_RIG.spillExponent,
 		scene,
 	);
-	light.diffuse = Color3.FromHexString("#ece7dc");
+	light.diffuse = Color3.FromHexString("#d99a55");
 	light.specular = Color3.Black();
 	light.intensity = EXHIBIT_LIGHT_RIG.spillIntensity;
 	light.range = EXHIBIT_LIGHT_RIG.spillRange;
@@ -171,9 +172,9 @@ function createWallSpotlight(exhibit: Exhibit, scene: Scene): void {
 		WALL_LIGHT_RIG.exponent,
 		scene,
 	);
-	light.diffuse = Color3.FromHexString("#fff0d4");
-	light.specular = Color3.FromHexString("#fff7e8");
-	light.intensity = WALL_LIGHT_RIG.intensity;
+	light.diffuse = Color3.FromHexString("#ffc978");
+	light.specular = Color3.FromHexString("#ffe8bd");
+	light.intensity = WALL_LIGHT_RIG.intensity * 0.72;
 	light.range = WALL_LIGHT_RIG.range;
 	createWallSpotFixture(
 		`wall-spot-fixture-${exhibit.id}`,
@@ -215,9 +216,9 @@ function createWallGlowMaterial(name: string, scene: Scene): StandardMaterial {
 	);
 	const context = texture.getContext();
 	const gradient = context.createRadialGradient(128, 80, 8, 128, 80, 128);
-	gradient.addColorStop(0, "rgba(255, 237, 198, 0.34)");
-	gradient.addColorStop(0.42, "rgba(255, 224, 168, 0.16)");
-	gradient.addColorStop(1, "rgba(255, 224, 168, 0)");
+	gradient.addColorStop(0, "rgba(255, 201, 120, 0.28)");
+	gradient.addColorStop(0.42, "rgba(255, 172, 88, 0.12)");
+	gradient.addColorStop(1, "rgba(255, 172, 88, 0)");
 	context.clearRect(0, 0, 256, 160);
 	context.fillStyle = gradient;
 	context.fillRect(0, 0, 256, 160);
@@ -259,16 +260,16 @@ function createFloorGlow(name: string, position: Vector3, scene: Scene): void {
 		new Vector3(position.x, EXHIBIT_LIGHT_RIG.floorGlowHeight, position.z),
 		scene,
 	);
-	light.diffuse = Color3.FromHexString("#dfe4e7");
-	light.specular = Color3.FromHexString("#ffffff");
+	light.diffuse = Color3.FromHexString("#f4b76d");
+	light.specular = Color3.FromHexString("#ffdca3");
 	light.intensity = EXHIBIT_LIGHT_RIG.floorGlowIntensity;
 	light.range = EXHIBIT_LIGHT_RIG.floorGlowRange;
 
 	const glowMaterial = new StandardMaterial(`${name}-material`, scene);
 	glowMaterial.maxSimultaneousLights = 16;
-	glowMaterial.diffuseColor = Color3.FromHexString("#dfe4e7");
-	glowMaterial.emissiveColor = Color3.FromHexString("#dfe4e7");
-	glowMaterial.alpha = 0.2;
+	glowMaterial.diffuseColor = Color3.FromHexString("#f0a85b");
+	glowMaterial.emissiveColor = Color3.FromHexString("#d78335");
+	glowMaterial.alpha = 0.16;
 
 	const glow = MeshBuilder.CreateCylinder(
 		name,
@@ -302,6 +303,36 @@ function createCeilingTracks(scene: Scene): void {
 		);
 		track.position = position;
 		track.material = material;
+	}
+}
+
+function createDoorwayRimLight(scene: Scene): void {
+	const x = ROOM_WIDTH / 2;
+	const sideOffset = DOORWAY_WIDTH / 2 + 0.18;
+	const light = new PointLight(
+		"doorway-warm-rim",
+		new Vector3(x, 2.4, 0),
+		scene,
+	);
+	light.diffuse = Color3.FromHexString("#ffb45f");
+	light.specular = Color3.Black();
+	light.intensity = 0.9;
+	light.range = 5.2;
+
+	const material = new StandardMaterial("doorway-rim-material", scene);
+	material.diffuseColor = Color3.FromHexString("#9d5c24");
+	material.emissiveColor = Color3.FromHexString("#d28136");
+	material.specularColor = Color3.Black();
+	material.alpha = 0.46;
+
+	for (const z of [-sideOffset, sideOffset]) {
+		const rim = MeshBuilder.CreateBox(
+			`doorway-rim-${z > 0 ? "north" : "south"}`,
+			{ width: 0.06, height: 2.6, depth: 0.16 },
+			scene,
+		);
+		rim.position = new Vector3(x, 1.3, z);
+		rim.material = material;
 	}
 }
 

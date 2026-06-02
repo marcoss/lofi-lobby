@@ -136,8 +136,8 @@ function createFloorMaterial(scene: Scene): StandardMaterial {
 function createWallMaterial(scene: Scene): StandardMaterial {
 	const material = createMaterial(
 		"plastered-wall-material",
-		"#ffffff",
-		"#3f3d3a",
+		"#8f877c",
+		"#27231f",
 		scene,
 	);
 	const texture = new Texture(wallTextureUrl, scene);
