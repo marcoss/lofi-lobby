@@ -5,7 +5,8 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import type { Scene } from "@babylonjs/core/scene";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
-import floorTextureUrl from "../assets/laminate_floor_02_diff_1k.webp";
+import floorTextureUrl from "../assets/herringbone_parquet_diff_1k.webp";
+import wallTextureUrl from "../assets/plastered_wall_05_diff_1k.webp";
 
 export type GalleryRoom = {
 	floor: Mesh;
@@ -20,30 +21,7 @@ const WALL_THICKNESS = 0.35;
 
 export function createGalleryRoom(scene: Scene): GalleryRoom {
 	const floorMaterial = createFloorMaterial(scene);
-	const northWallMaterial = createMaterial(
-		"north-charcoal-wall",
-		"#33383e",
-		"#272b30",
-		scene,
-	);
-	const southWallMaterial = createMaterial(
-		"south-slate-wall",
-		"#303b45",
-		"#272f36",
-		scene,
-	);
-	const eastWallMaterial = createMaterial(
-		"east-graphite-wall",
-		"#3d4041",
-		"#2c2f30",
-		scene,
-	);
-	const westWallMaterial = createMaterial(
-		"west-blueblack-wall",
-		"#29353f",
-		"#222b33",
-		scene,
-	);
+	const wallMaterial = createWallMaterial(scene);
 	const ceilingMaterial = createMaterial(
 		"black-ceiling-material",
 		"#050506",
@@ -90,7 +68,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 			ROOM_WIDTH,
 			WALL_HEIGHT,
 			WALL_THICKNESS,
-			northWallMaterial,
+			wallMaterial,
 			scene,
 		),
 		createWall(
@@ -99,7 +77,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 			ROOM_WIDTH,
 			WALL_HEIGHT,
 			WALL_THICKNESS,
-			southWallMaterial,
+			wallMaterial,
 			scene,
 		),
 		createWall(
@@ -108,7 +86,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 			WALL_THICKNESS,
 			WALL_HEIGHT,
 			ROOM_DEPTH + WALL_THICKNESS * 2,
-			eastWallMaterial,
+			wallMaterial,
 			scene,
 		),
 		createWall(
@@ -117,7 +95,7 @@ export function createGalleryRoom(scene: Scene): GalleryRoom {
 			WALL_THICKNESS,
 			WALL_HEIGHT,
 			ROOM_DEPTH + WALL_THICKNESS * 2,
-			westWallMaterial,
+			wallMaterial,
 			scene,
 		),
 	];
@@ -144,16 +122,31 @@ function createMaterial(
 
 function createFloorMaterial(scene: Scene): StandardMaterial {
 	const material = createMaterial(
-		"laminate-floor-material",
+		"herringbone-parquet-material",
 		"#ffffff",
-		"#6c5540",
+		"#7b5c3f",
 		scene,
 	);
 	const texture = new Texture(floorTextureUrl, scene);
-	texture.uScale = ROOM_WIDTH / 2.4;
-	texture.vScale = ROOM_DEPTH / 2.4;
+	texture.uScale = ROOM_WIDTH / 3.2;
+	texture.vScale = ROOM_DEPTH / 3.2;
 	material.diffuseTexture = texture;
-	material.specularPower = 48;
+	material.specularPower = 56;
+	return material;
+}
+
+function createWallMaterial(scene: Scene): StandardMaterial {
+	const material = createMaterial(
+		"plastered-wall-material",
+		"#ffffff",
+		"#3f3d3a",
+		scene,
+	);
+	const texture = new Texture(wallTextureUrl, scene);
+	texture.uScale = 6;
+	texture.vScale = 2.2;
+	material.diffuseTexture = texture;
+	material.specularPower = 14;
 	return material;
 }
 
